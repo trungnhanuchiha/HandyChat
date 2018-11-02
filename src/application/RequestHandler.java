@@ -27,11 +27,23 @@ public class RequestHandler {
 	public int amount_messages = 15;
 	public int amount_messages_torender = 5;
 	
+	private String get_GroupFile() {
+		GroupChatfile = NowUser+"_group.json";
+		return GroupChatfile;
+	}
+	
 	private String get_Conversationfile() {
 		Conversationfile = NowUser+"_dual.json";
 		return Conversationfile;
 	}
 	
+	public String Create_UTC_TIME_NOW() {
+		TimeZone tz = TimeZone.getTimeZone("UTC");
+		DateFormat df = new SimpleDateFormat(UTC_Format);
+		df.setTimeZone(tz);
+		String nowAsISO = df.format(new Date());
+		return nowAsISO;
+	}
 	
 	// port 8000
 	public JSONObject Req_Send_Message(String to, String content) {
@@ -47,12 +59,28 @@ public class RequestHandler {
 
 		return jo;
 	}
-	public JSONObject Req_Get_Messages_Count(String toUser) {
+	public JSONObject Req_Get_Messages_Count(String toUser, boolean isGroup) {
 		JSONObject jo = new JSONObject();
+		if(!isGroup) {
 			jo.put("type",Constant.req_get_messages_count);
 			jo.put("account", toUser);
-			return  jo;
+		}
+		else {
+			jo.put("type", Constant.req_get_message_group_count);
+			jo.put("group", toUser);
+		}
+
+		return  jo;
 		
+	}
+	
+	public JSONObject Req_Send_Message_Group(String ID, String Content) {
+		JSONObject jo = new JSONObject();
+		jo.put("type", Constant.req_send_message_group);
+		jo.put("group", ID);
+		jo.put("timestamp", Create_UTC_TIME_NOW());
+		jo.put("content", Content);
+		return jo;
 	}
 	
 	
@@ -88,6 +116,21 @@ public class RequestHandler {
 				e.printStackTrace();
 			} 
 		}
+		File GroupFile = new File(DataPassTest+get_GroupFile());
+		if(!GroupFile.exists()) {
+			JSONObject jo = new JSONObject();
+			jo.put("conversation", new JSONArray());
+			PrintWriter pw;
+			try {
+				pw = new PrintWriter(DataPassTest+get_GroupFile());
+		        pw.write(jo.toJSONString()); 
+		        pw.flush(); 
+		        pw.close(); 
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+			} 
+		}
+		
 	}
 	
 	public void create_new_conversation(boolean isGroup, List<String> Users) {
@@ -126,23 +169,99 @@ public class RequestHandler {
 			e.printStackTrace();
 		}
 	}
-	public JSONObject Req_Get_Messages(String account, int num_messages, int num_now_message) {
+	public JSONObject Req_Get_Messages(String ID, int num_messages, int num_now_message, boolean isGroup) {
 		JSONObject jo = new JSONObject();
-		int message_index_to_get = num_messages -  num_now_message;
-		jo.put("type",Constant.req_get_messages);
-		jo.put("account", account);
-		jo.put("content", String.valueOf(message_index_to_get-amount_messages)+":"+ String.valueOf(message_index_to_get-1));
+		
+		if(!isGroup) {
+			jo.put("type",Constant.req_get_messages);
+			jo.put("account", ID);
+		}
+		else {
+			jo.put("type",Constant.req_get_group_messages);
+			jo.put("group", ID);
+		}
+		
+		int message_index_to_get =  num_messages -  num_now_message;
+		if(message_index_to_get>=amount_messages) {
+			System.out.println("lower bound: "+String.valueOf(message_index_to_get-amount_messages)+" ,upper bound: "+String.valueOf(message_index_to_get-1));
+			jo.put("content", String.valueOf(message_index_to_get-amount_messages)+":"+ String.valueOf(message_index_to_get-1));
+		}
+		else {
+			System.out.println("lower bound: "+String.valueOf(0)+" ,upper bound: "+String.valueOf(message_index_to_get-1));
+			jo.put("content", String.valueOf(0)+":"+ String.valueOf(message_index_to_get-1));
+		}
+		
+		
+		
 		return jo;
 	}
-	public JSONObject Req_create_group_Chat(List<String> list_account, String uuid) {
+	public JSONObject Req_create_group_Chat(List<String> list_account, String uuid, String groupname) {
 		JSONObject jo = new JSONObject();
 		String term = list_account.get(0);
 		for(int i  = 1;i<list_account.size();++i) term += "|" + list_account.get(i);
 		jo.put("type",Constant.req_create_group);
 		jo.put("content",uuid+";"+term);
+		jo.put("name", groupname);
 		return jo;
-		
 	}
 	
+	public JSONObject Req_mark_messages_seen(String account, boolean isGroup) {
+		JSONObject jo = new JSONObject();
+		if(isGroup) {
+			jo.put("type", Constant.req_mark_group_messages_seen);
+			jo.put("conversation", account);
+		}
+		else {
+			jo.put("type", Constant.req_mark_messages_seen);
+			jo.put("account", account);
+		}
+		return jo;
+	}
 	
+	public JSONObject Req_Send_Call(String to) {                        
+		JSONObject jo = new JSONObject();
+			jo.put("type", Constant.req_send_call_type);
+			jo.put("to", to);
+			TimeZone tz = TimeZone.getTimeZone("UTC");
+			DateFormat df = new SimpleDateFormat(UTC_Format);
+			df.setTimeZone(tz);
+			String nowAsISO = df.format(new Date());
+			jo.put("timestamp",nowAsISO);
+		return jo;
+	}
+	
+	public JSONObject Get_InFor_Group(String ID) {
+		JSONObject jo_new = new JSONObject();
+		try {
+			JSONObject jo_old = (JSONObject) new JSONParser().parse(new FileReader(DataPassTest+get_GroupFile()));
+			JSONArray conversations = (JSONArray) jo_old.get("conversation");
+			for( Object conversation : conversations) {
+				JSONObject term = (JSONObject) conversation;
+				String IDdb = (String) term.get("ID");
+				if(IDdb.equals(ID)) {
+					jo_new = term;
+					
+					break;
+				}
+			}
+		} catch (IOException | ParseException e) {
+			e.printStackTrace();
+		}
+		return jo_new;
+	}
+	
+	public JSONObject Add_New_User_To_Group(String ID, String account) {
+		JSONObject jo_new = new JSONObject();
+		jo_new.put("type", Constant.req_add_user_to_group);
+		jo_new.put("account", account);
+		jo_new.put("group", ID);
+		return jo_new;
+	}
+
+	public JSONObject Leave_Group(String ID) {
+		JSONObject jo = new JSONObject();
+		jo.put("type", Constant.req_leave_group);
+		jo.put("group", ID);
+		return jo;
+	}
 }

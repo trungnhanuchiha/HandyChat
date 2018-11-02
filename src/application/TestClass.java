@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.sql.Timestamp;
@@ -34,20 +35,33 @@ import org.json.simple.parser.JSONParser;
 public class TestClass {
 	
 	public static void main(String[] args) throws FileNotFoundException {
-		UUID uid = UUID.randomUUID();
-		System.out.println(uid.toString());
-		uid = UUID.randomUUID();
-		System.out.println(uid.toString());
-		uid = UUID.randomUUID();
-		System.out.println(uid.toString());
-		uid = UUID.randomUUID();
-		System.out.println(uid.toString());
-		uid = UUID.randomUUID();
-		System.out.println(uid.toString());
-		uid = UUID.randomUUID();
-		System.out.println(uid.toString());
-		uid = UUID.randomUUID();
-		System.out.println(uid.toString());
+		JSONArray arr = new JSONArray();
+		List<String> term = new ArrayList<String>();
+		String[] term2 = {"123","456","789"};
+		term.add("1");
+		term.add("2");
+		term.add("3");
+		arr.addAll(Arrays.asList(term2));
+		//System.out.println(arr);
+		String term1 = "nhanvt|huytc|test1";
+		
+		System.out.println(term1.split("\\|")[2]);
+		
+		
+//		UUID uid = UUID.randomUUID();
+//		System.out.println(uid.toString());
+//		uid = UUID.randomUUID();
+//		System.out.println(uid.toString());
+//		uid = UUID.randomUUID();
+//		System.out.println(uid.toString());
+//		uid = UUID.randomUUID();
+//		System.out.println(uid.toString());
+//		uid = UUID.randomUUID();
+//		System.out.println(uid.toString());
+//		uid = UUID.randomUUID();
+//		System.out.println(uid.toString());
+//		uid = UUID.randomUUID();
+//		System.out.println(uid.toString());
 //		TimeZone tz = TimeZone.getTimeZone("UTC");
 //		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.sss'Z'"); // Quoted "Z" to indicate UTC, no timezone offset
 //		df.setTimeZone(tz);

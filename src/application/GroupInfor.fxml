@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="448.0" prefWidth="560.0" stylesheets="@stylesheet.css" xmlns="http://javafx.com/javafx/10.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.GroupInforController">
+   <children>
+      <Pane prefHeight="94.0" prefWidth="600.0" styleClass="pane-header-Create-Group">
+         <children>
+            <Label layoutX="119.0" layoutY="39.0" prefHeight="27.0" prefWidth="65.0" styleClass="lbl_header-Create-Group" text="Group:">
+               <font>
+                  <Font size="18.0" />
+               </font>
+            </Label>
+            <Label fx:id="lbl_GroupName" layoutX="268.0" layoutY="39.0" prefHeight="27.0" prefWidth="179.0" styleClass="lbl_header-Create-Group" text="Group Name">
+               <font>
+                  <Font size="18.0" />
+               </font>
+            </Label>
+         </children></Pane>
+      <ScrollPane prefHeight="216.0" prefWidth="560.0">
+         <content>
+            <HBox prefHeight="211.0" prefWidth="558.0">
+               <children>
+                  <ListView fx:id="list_Participants" prefHeight="213.0" prefWidth="281.0" />
+                  <VBox fx:id="vboxOflistCheckbox" prefHeight="211.0" prefWidth="275.0" />
+               </children>
+            </HBox>
+         </content>
+      </ScrollPane>
+      <Pane prefHeight="78.0" prefWidth="560.0" styleClass="pane-header-Create-Group">
+         <children>
+            <Label layoutX="65.0" layoutY="24.0" prefHeight="27.0" prefWidth="165.0" styleClass="lbl_header-Create-Group" text="Group creation date">
+               <font>
+                  <Font size="18.0" />
+               </font>
+            </Label>
+            <Label fx:id="lbl_GroupCreateDate" layoutX="280.0" layoutY="24.0" prefHeight="27.0" prefWidth="274.0" styleClass="lbl_header-Create-Group" text="Date">
+               <font>
+                  <Font size="18.0" />
+               </font>
+            </Label>
+         </children>
+      </Pane>
+      <Pane prefHeight="60.0" prefWidth="560.0">
+         <children>
+            <ImageView fitHeight="34.0" fitWidth="33.0" layoutX="484.0" layoutY="16.0" onMouseClicked="#ClickToLeaveGroup" pickOnBounds="true" preserveRatio="true">
+               <image>
+                  <Image url="@../icons/exit.png" />
+               </image>
+            </ImageView>
+            <ImageView fitHeight="33.0" fitWidth="33.0" layoutX="41.0" layoutY="16.0" onMouseClicked="#ClickToAddUser" pickOnBounds="true" preserveRatio="true">
+               <image>
+                  <Image url="@../icons/round-add-button.png" />
+               </image>
+            </ImageView>
+         </children>
+      </Pane>
+   </children>
+</VBox>

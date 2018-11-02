@@ -9,6 +9,7 @@ import javafx.fxml.Initializable;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.TextField;
+import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.paint.Color;
@@ -17,6 +18,7 @@ import javafx.stage.StageStyle;
 import javafx.stage.WindowEvent;
 
 import java.util.Base64;
+import javafx.scene.input.KeyEvent;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -65,7 +67,7 @@ public class LoginController  implements Initializable {
         int responseCode = con.getResponseCode();
         System.out.println("\nSending 'GET' request to URL : " + url);
         System.out.println("Response Code : " + responseCode);
-        System.out.println("content: " + con.getHeaderFieldKey(0) );
+        //System.out.println("content: " + con.getHeaderFieldKey(0) );
 
         InputStream content = (InputStream)con.getInputStream();
         BufferedReader in = new BufferedReader(
@@ -83,26 +85,47 @@ public class LoginController  implements Initializable {
 
     }
 
-    public  void logIn(ActionEvent event){
-        try {
-            sendGet();
-            Parent root = FXMLLoader.load(getClass().getResource("Ui.fxml"));
-            Stage stage_chat = new Stage();
-            stage_chat.setScene(new Scene(root));
-            stage_chat.initStyle(StageStyle.UNDECORATED);
-            Stage stage_login = Main.stage;
-            stage_login.hide();
-            stage_chat.show();
-            stage_chat.setOnHidden((WindowEvent event1) ->{
-            	stage_login.show();
-        	});
-            
-        } catch (Exception e) {
-            //e.printStackTrace();
-        	UiController.create_notification("Error When Login","Wrong Account Or Password !");
-        	
-        }
+    public void logIn(ActionEvent event){
+    	LoginHandler();
 
+    }
+    
+    public void EnterToLogin(KeyEvent event) {
+    	if(event.getCode()==KeyCode.ENTER) {
+    		LoginHandler();
+    	}
+    }
+    
+    public void LoginHandler() {
+    	 try {
+             sendGet();
+             //Parent root = FXMLLoader.load(getClass().getResource("Ui.fxml"));
+             
+             FXMLLoader loader =  new FXMLLoader();
+         	loader.setLocation(getClass().getResource("Ui.fxml"));
+             
+             Stage stage_chat = new Stage();
+             
+             
+             
+             stage_chat.setScene(new Scene(loader.load()));
+             stage_chat.initStyle(StageStyle.UNDECORATED);
+             Stage stage_login = Main.stage;
+             
+             UiController ui_chat = loader.getController();
+             ui_chat.Set_Account(inputUsername.getText());
+             ui_chat.SetUser();
+             
+             stage_login.hide();
+             stage_chat.show();
+             stage_chat.setOnHidden((WindowEvent event1) ->{
+             	stage_login.show();
+         	});
+             
+         } catch (Exception e) {
+         	UiController.create_notification("Error When Login","Wrong Account Or Password !");
+         	
+         }
     }
 
     @Override

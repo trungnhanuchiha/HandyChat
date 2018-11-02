@@ -55,6 +55,7 @@ import javafx.stage.WindowEvent;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
+import javafx.scene.control.ScrollBar;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
@@ -78,6 +79,9 @@ public class UiController implements Initializable {
     
     @FXML
     private ScrollPane scrollChat;
+    
+    @FXML
+    private ScrollPane scrollOnline;
     
     @FXML
     private JFXListView<ColoredText> listOnlineUser;
@@ -110,6 +114,8 @@ public class UiController implements Initializable {
     private Pane chatAll, conversation1;
     @FXML
     private JFXButton btnCreateGroup, btn1, btnSendMess;
+    
+    
 
     @FXML
     private void close(MouseEvent event) {
@@ -155,7 +161,7 @@ public class UiController implements Initializable {
     
     
     // SET UP CONNECTION
-    String Username="a";
+    String Username="";
     String toUser = "";
     String serverHost = "35.240.252.106";
     int[] port = {8000,8001,8002,8003};
@@ -164,6 +170,7 @@ public class UiController implements Initializable {
     List<Socket> socketOfClient = new ArrayList<Socket>();
     List<BufferedReader> is =  new ArrayList<BufferedReader>();
     List<BufferedWriter> os =  new ArrayList<BufferedWriter>();
+    boolean isGettingMessage = false;
 
     
     
@@ -176,7 +183,8 @@ public class UiController implements Initializable {
     public void setDisableOfCreateGroup(Boolean val) {
     	btnCreateGroup.setDisable(val);
     }
-
+    
+    private boolean ReceiveDataAfterLogin = false;
     
     
     
@@ -199,22 +207,27 @@ public class UiController implements Initializable {
     	listOnlineUser.getSelectionModel().select(index);
     }
     
-    public void create_group_from_gui(List<String> list_account, String namegroup) {
+    public void create_group_from_gui(List<String> list_account, String namegroup, List<String> list_name) {
     	
+    	this.list_name_users_group = list_name;
     	UUID uid = UUID.randomUUID();
-    	JSONObject jo =  reqhan.Req_create_group_Chat(list_account,uid.toString());
-    	Create_Group(namegroup, uid.toString());
+    	JSONObject jo =  reqhan.Req_create_group_Chat(list_account,uid.toString(),namegroup);
+    	
+    	ColoredText group = new ColoredText(namegroup, Color.BLUE, true, uid.toString(), list_account);
+    	Create_Group(group);
+    	
     	System.out.println(jo.toJSONString());
-//    	try {
-//			os.get(0).write(jo.toString());
-//			os.get(0).newLine();
-//		    os.get(0).flush();
-//		    	
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//		}
+    	try {
+			os.get(0).write(jo.toString());
+			os.get(0).newLine();
+		    os.get(0).flush();
+		    	
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
        
     }
+    
     
     
     private void create_group_gui() {
@@ -242,7 +255,7 @@ public class UiController implements Initializable {
     	create_group_state.show();
     	create_group_state.setOnHidden((WindowEvent event1) ->{
     		setDisableOfCreateGroup(false);
-    		if(!groupcont.get_name_group().equals("")) create_group_from_gui(groupcont.getlist_user_after_check(),groupcont.get_name_group());
+    		if(!groupcont.get_name_group().equals("")) create_group_from_gui(groupcont.getlist_user_after_check(),groupcont.get_name_group(), groupcont.getlist_name_after_check());
     	});
     	
     	setDisableOfCreateGroup(true);
@@ -256,8 +269,36 @@ public class UiController implements Initializable {
     }
     
     private void Create_Group(String namegroup, String uuid) {
-    	listOnlineUser.getItems().add(new ColoredText(namegroup,Color.BLUE, true, uuid));
-    	listNumNewMessage.getItems().add(new ColoredText(String.valueOf(0),Color.BLUE, true, uuid));
+    	listOnlineUser.getItems().add(new ColoredText(namegroup,Color.BLUE, true, uuid,""));
+    	listNumNewMessage.getItems().add(new ColoredText(String.valueOf(0),Color.BLUE, true, uuid,""));
+    	
+    }
+    
+    private void Create_Group(ColoredText group) {
+    	listOnlineUser.getItems().add(group);
+    	listNumNewMessage.getItems().add(new ColoredText(String.valueOf(0),Color.BLUE, true, group.getID(),""));
+    	responsehandler.list_cache_list_Group.add(new ColoredText(group.getText(), group.getColor(), group.getisGroup(), group.getID(),group.getparticipants()));
+    }
+    
+    private void Create_Groups(List<ColoredText> listGroup) {
+    	listGroup.forEach(action -> {
+    		listOnlineUser.getItems().add(action);
+        	listNumNewMessage.getItems().add(new ColoredText(String.valueOf(0),Color.BLUE, true, action.getID(),""));
+    		
+    	});
+    	
+    }
+    
+    private void Mark_Message_Seen(String ID, boolean isGroup) {
+    	JSONObject jo = reqhan.Req_mark_messages_seen(ID, isGroup);
+    	try {
+    		os.get(2).write(jo.toString());
+			os.get(2).newLine();
+		    os.get(2).flush();
+    	}
+    	catch(IOException e) {
+    		e.printStackTrace();
+    	}
     	
     }
     
@@ -302,6 +343,16 @@ public class UiController implements Initializable {
         return  hBox;
     }
     
+    private int Get_Num_Message_By_ID(String ID) {
+    	int id = 0;
+    	for(int i = 0;i<listNumNewMessage.getItems().size();++i) {
+    		if(listNumNewMessage.getItems().get(i).getID().equals(ID)) {
+    			return Integer.valueOf(listNumNewMessage.getItems().get(i).getText());
+    		}
+    	}
+    	return id;
+    }
+   
     
     
     // File control
@@ -327,20 +378,174 @@ public class UiController implements Initializable {
     List<NewMessageNotification> new_message_num = null;
     List<AccountInformation> list_online = null;
     List<AccountInformation> list_offline = null;
+    List<String> list_name_users_group = null;
+    List<ColoredText> list_cache_list_Online = null;
     
 
     
     // port 8000
     public void EnterToSendMessage(KeyEvent event) {
         if(event.getCode()==KeyCode.ENTER) {
-        	if(txtContMess.getText().length()!=0) {
-        		scrollChat.vvalueProperty().bind(vboxChat.heightProperty());
-        		SendMessage(toUser,txtContMess.getText());
-        		txtContMess.setText("");
-        		
-        	}
+        	EnterToSendMessageHandler();
         }
     }
+    
+    public void ClickToSendMessage(MouseEvent event) {
+    	EnterToSendMessageHandler();
+    }
+    
+    public void ClickToViewInFor(MouseEvent event) {
+    	if(listOnlineUser.getSelectionModel().getSelectedItem().getisGroup()) {
+    		ClickToViewInForHandler(listOnlineUser.getSelectionModel().getSelectedItem().getID());
+    	}
+    }
+    
+    public void ClickToViewInForHandler(String ID) {
+    	JSONObject jo = reqhan.Get_InFor_Group(ID);
+    	
+    	System.out.println("jo "+jo.toJSONString());
+    	
+    	FXMLLoader loader =  new FXMLLoader();
+    	loader.setLocation(getClass().getResource("GroupInfor.fxml"));
+    	
+    	Parent group_infor_view = null;
+		try {
+			group_infor_view = loader.load();
+		} catch (IOException e1) {
+			e1.printStackTrace();
+			
+		}
+    	Scene scene = new Scene(group_infor_view);
+    	Stage group_infor_state = new Stage();
+    	group_infor_state.setScene(scene);
+    	group_infor_state.setTitle("Group Information");
+    	
+    	GroupInforController groupcont = loader.getController();
+    	groupcont.Set_Group_Name((String) jo.get("name"));
+    	groupcont.Set_Group_Date(responsehandler.convert_UTC_to_Local((String) jo.get("date_created")));
+    	List<String> list_user = new ArrayList<String>();
+    	list_user.addAll((JSONArray) jo.get("participants"));
+    	
+    	groupcont.Set_List_User(list_user);
+    	groupcont.setListOnlineOffline(getListUser());
+    	groupcont.setListAccount(listOnlineUser.getSelectionModel().getSelectedItem().getparticipants());
+    	
+    	group_infor_state.setOnHidden((WindowEvent event1) ->{
+    		if(groupcont.list_Other_User_Result.size()>0) Add_New_User_To_Group_GUI(groupcont.list_Other_User_Result);
+    		if(groupcont.getisExit()) LeaveGroup();
+    	});
+    	
+    	
+    	group_infor_state.show();
+    	
+    }
+    
+    public void Add_New_User_To_Group_GUI(List<AccountInformation> list_acc) {
+    	List<String> name_users = new ArrayList<String>();
+    	for(AccountInformation acc: list_acc) {
+    		JSONObject jo = reqhan.Add_New_User_To_Group(toUser, acc.account_name);
+    		name_users.add(acc.display_name);
+    		try {
+    			os.get(0).write(jo.toString());
+                os.get(0).newLine();
+                os.get(0).flush();
+    		}
+    		catch (IOException e) {
+    			  e.printStackTrace();
+			}
+    		listOnlineUser.getSelectionModel().getSelectedItem().participants.add(acc.account_name);
+    	}
+    	responsehandler.Add_User_To_Group(toUser, name_users);
+    }
+    
+    public void Add_New_User_To_Group_GUI_ID(ColoredText group) {
+		listOnlineUser.getItems().forEach(action -> {
+			if(action.getID().equals(group.getID())) {
+				action.participants.addAll(group.getparticipants());
+			}
+		});
+		responsehandler.list_cache_list_Group.forEach(action -> {
+			if(action.getID().equals(group.getID())) {
+				action.participants.addAll(group.getparticipants());
+			}
+		});
+		
+	}
+    
+    public void LeaveGroup() {
+    	JSONObject jObject = reqhan.Leave_Group(toUser);
+    	try {
+			os.get(0).write(jObject.toString());
+            os.get(0).newLine();
+            os.get(0).flush();
+            removeGroup(toUser,true,"");
+		}
+		catch (IOException e) {
+			  e.printStackTrace();
+		}
+    }
+    public void removeGroup(String ID, boolean active, String account) {
+    	if(active) {
+        	int i = 0;
+        	for(ColoredText group: listOnlineUser.getItems()) {
+        		if (group.getID().equals(ID)){
+        			break;
+        		}
+        		i++;
+        	}
+        	listOnlineUser.getItems().remove(i);
+        	listNumNewMessage.getItems().remove(i);
+        	i = 0;
+        	for(ColoredText group: responsehandler.list_cache_list_Group) {
+        		if (group.getID().equals(ID)){
+        			break;
+        		}
+        		i++;
+        	}
+        	responsehandler.list_cache_list_Group.remove(i);
+        	listOnlineUser.getSelectionModel().select(0);
+    	}
+    	else {
+        	for(ColoredText group: listOnlineUser.getItems()) {
+        		if (group.getID().equals(ID)){
+        			RemoveFromParticipant(group.participants, account);
+        			break;
+        		}
+        	}
+//        	for(ColoredText group: responsehandler.list_cache_list_Group) {
+//        		if (group.getID().equals(ID)){
+//        			RemoveFromParticipant(group.participants, account);
+//        			break;
+//        		}
+//        	}
+    	}
+    }
+    
+    public void RemoveFromParticipant(List<String> pars, String account) {
+    	int i = 0;
+    	for(String acc: pars) {
+    		if (acc.equals(account)){
+    			break;
+    		}
+    		i++;
+    	}
+    	pars.remove(i);
+    }
+    
+    public void EnterToSendMessageHandler() {
+    	if(txtContMess.getText().length()!=0 && !toUser.equals(Username)) {
+    		scrollChat.vvalueProperty().bind(vboxChat.heightProperty());
+        	if(listOnlineUser.getSelectionModel().getSelectedItem().getisGroup()) {
+    			SendMessageGroup(listOnlineUser.getSelectionModel().getSelectedItem().getID(),txtContMess.getText());
+    		}
+    		else {
+    			SendMessage(toUser,txtContMess.getText());
+    		}
+        	txtContMess.setText("");
+    		
+    	}
+    }
+    
     
     public void SendMessage(String to, String mess) {
  
@@ -358,9 +563,26 @@ public class UiController implements Initializable {
         } 
     }
     
-    public void GetMessagesCount() {
+    public void SendMessageGroup(String ID, String Content) {
     	try {
-        	JSONObject jo = reqhan.Req_Get_Messages_Count(toUser);
+        	JSONObject jo = reqhan.Req_Send_Message_Group(ID, Content);
+        	String datetime = responsehandler.convert_UTC_to_Local((String) jo.get("timestamp"));
+        	RenderMessage(0,datetime,Content);
+        	responsehandler.Save_Message_Group(ID, new Message(Username,ID,(String) jo.get("timestamp"), Content,0));
+        	
+        	os.get(0).write(jo.toString());
+            os.get(0).newLine();
+            os.get(0).flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } 
+    	
+    }
+    
+    
+    public void GetMessagesCount(boolean isGroup) {
+    	try {
+    		JSONObject jo = reqhan.Req_Get_Messages_Count(toUser,isGroup); 
         	os.get(0).write(jo.toString());
             os.get(0).newLine();
             os.get(0).flush();
@@ -369,9 +591,11 @@ public class UiController implements Initializable {
         }
     }
     
-    public void Get_Some_Message(int lastmessage, int num_now_message) {
+
+    
+    public void Get_Some_Message(int lastmessage, int num_now_message, boolean isGroup) {
     	try {
-    		JSONObject jo =  reqhan.Req_Get_Messages(toUser, lastmessage,num_now_message );
+    		JSONObject jo =  reqhan.Req_Get_Messages(toUser, lastmessage,num_now_message, isGroup);
     		System.out.println(jo.toJSONString());
         	os.get(0).write(jo.toString());
             os.get(0).newLine();
@@ -380,6 +604,27 @@ public class UiController implements Initializable {
             e.printStackTrace();
         }
     	
+    }
+    
+    public List<Message> get_List_Message_From_ID(String ID, boolean isGroup){
+    	List<Message> list = new ArrayList<Message>();
+    	if(isGroup) {
+    		for(int i = 0;i<ResponseHandler.list_group.size();++i) {
+    			if(ResponseHandler.list_group.get(i).to.equals(ID) && !ResponseHandler.list_group.get(i).isSave){
+    				list.add(ResponseHandler.list_group.get(i));
+    				ResponseHandler.list_group.get(i).isSave = true;
+    			}
+    		}
+    	}
+    	else {
+    		for(int i = 0;i<ResponseHandler.list_dual.size();++i) {
+    			if(ResponseHandler.list_dual.get(i).from.equals(ID) && !ResponseHandler.list_dual.get(i).isSave) {
+    				list.add(ResponseHandler.list_dual.get(i));
+    				ResponseHandler.list_dual.get(i).isSave = true;
+    			}
+    		}
+    	}
+    	return list;
     }
     
     public void RecieveMessage(int alignment, String datetime,String mess) {
@@ -403,21 +648,53 @@ public class UiController implements Initializable {
     	return hbox;
     }
     
+    public void create_Notification_for_new_Group() {
+    	if(ResponseHandler.GroupNameNew.size()>0) {
+    		String content = ResponseHandler.GroupNameNew.get(0);
+    		for(int i = 1;i<ResponseHandler.GroupNameNew.size();++i) {
+    			content+= ", "+ResponseHandler.GroupNameNew.get(i);
+    		}
+    		create_notification("Group Chat !", "You have just been invited to groups: "+content);
+    	}
+    	
+    }
+    
+    public void Set_ID_New_Group(String[] arr) {
+    	listOnlineUser.getItems().forEach(action -> {
+    		if(action.getID().equals(arr[0])) {
+    			action.setID(arr[1]);
+    			responsehandler.createGroupInDB(arr[1],this.list_name_users_group, action.getText());
+    		}
+    	});
+    	responsehandler.list_cache_list_Group.forEach(action -> {
+    		if(action.getID().equals(arr[0])) {
+    			action.setID(arr[1]);
+    		}
+    	});
+    }
+    
+    
     // port 8001
     
-    public void ReceiceListOnlineUser( List<AccountInformation> list_online,  List<AccountInformation> list_offline) {
+    public void ReceiveListOnlineUser( List<AccountInformation> list_online,  List<AccountInformation> list_offline) {
     	this.list_online = list_online;
     	this.list_offline = list_offline;
+    
     	listOnlineUser.getItems().clear();
     	for(int i = 0;i<list_online.size();++i) {
-    		listOnlineUser.getItems().add(new ColoredText(list_online.get(i).display_name,Color.GREEN,false,list_online.get(i).account_name));
+    		listOnlineUser.getItems().add(new ColoredText(list_online.get(i).display_name,Color.GREEN,false,list_online.get(i).account_name,list_online.get(i).online_status));
+    		
     	}
     	for(int i = 0;i<list_offline.size();++i) {
-    		listOnlineUser.getItems().add(new ColoredText(list_offline.get(i).display_name,Color.BLACK,false,list_offline.get(i).account_name));
+    		listOnlineUser.getItems().add(new ColoredText(list_offline.get(i).display_name,Color.BLACK,false,list_offline.get(i).account_name,list_offline.get(i).online_status));
+    		
     	}
     	setBindingSearch();
     	SetNewMessageNotification();
+    	
     }
+
+    
     
     public void setBindingSearch() {
     	String[] arr_concat = new String[list_online.size() + list_offline.size()];
@@ -443,6 +720,23 @@ public class UiController implements Initializable {
     	}
     }
     
+    public  void Call_btn_click(MouseEvent e) {
+    	if(!toUser.equals("")) SendCall(toUser);
+    }
+    
+    public void SendCall(String to) {
+    	try {
+            JSONObject jo = reqhan.Req_Send_Call(to);
+            String datetime = responsehandler.convert_UTC_to_Local((String) jo.get("timestamp"));
+            Call call =  new Call(Username,to,(String) jo.get("timestamp"),0);
+            os.get(0).write(jo.toString());
+            os.get(0).newLine();
+            os.get(0).flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } 
+    }
+    
     private void SetNewMessageNotification() {
     	if(new_message_num != null) {
     		listNumNewMessage.getItems().clear();
@@ -451,27 +745,62 @@ public class UiController implements Initializable {
     			int term = 0;
     			for(int i = 0;i<new_message_num.size();++i) {
     				if(action.getID().equals(new_message_num.get(i).account)) {
-    					listNumNewMessage.getItems().add(new ColoredText(String.valueOf(new_message_num.get(i).num_message),Color.RED));
+    					if(!new_message_num.get(i).isGroup) {
+    						listNumNewMessage.getItems().add(new ColoredText(String.valueOf(new_message_num.get(i).num_message),Color.RED,false,new_message_num.get(i).account,""));
+    					}
+    					else {
+    						listNumNewMessage.getItems().add(new ColoredText(String.valueOf(new_message_num.get(i).num_message),Color.BLUE,true,new_message_num.get(i).account,""));
+    					}
     					term = 1;
     					break;
     				}
     			}
-    			if(term == 0) listNumNewMessage.getItems().add(new ColoredText(String.valueOf(0),Color.RED));
+    			if(term == 0) {
+    				if(!action.getisGroup()) {
+						listNumNewMessage.getItems().add(new ColoredText(String.valueOf(0),Color.RED,false,action.getID(),""));
+					}
+					else {
+						listNumNewMessage.getItems().add(new ColoredText(String.valueOf(0),Color.BLUE,true,action.getID(),""));
+					}
+    			}
     		});
     		
     	}
+    }
+    
+    public void Set_Seen_Conversation(String ID) {
+    	int i;
+    	List<ColoredText> num_new_message_list = listNumNewMessage.getItems();
+    	for(i = 0;i<num_new_message_list.size();++i) {
+    		if (num_new_message_list.get(i).getID().equals(ID)) {
+    			if(!num_new_message_list.get(i).getisGroup()) {
+    				listNumNewMessage.getItems().set(i, new ColoredText(String.valueOf(0),Color.RED,false,num_new_message_list.get(i).getID(),""));
+    			}
+    			else {
+    				listNumNewMessage.getItems().set(i, new ColoredText(String.valueOf(0),Color.BLUE,true,num_new_message_list.get(i).getID(),""));
+    			}
+    			break;
+    		}
+    	}
+    	
     }
     
     
     // all port
     
     public void SetUser() {
-        this.Username = txtUser.getText();
+        //this.Username = txtUser.getText();
+    	txtUser.setDisable(true);
+    	btnSetUser.setDisable(true);
         check_account(Username);
-        btnSetUser.setDisable(true);
         ResponseHandler.NowUser = this.Username;
         RequestHandler.NowUser = this.Username;
         reqhan.create_db_for_new_User();
+    }
+    
+    public void Set_Account(String account) {
+    	this.Username = account;
+    	txtUser.setText(Username);
     }
     
     public void check_account(String account) {
@@ -560,7 +889,15 @@ public class UiController implements Initializable {
         notification.show();
     }
     
-
+    private int  Get_index_user_by_ID(String ID) {
+    	List<ColoredText> list = listOnlineUser.getItems();
+    	int i = -1;
+    	for( i  = 0;i<list.size();++i) {
+    		if(list.get(i).getID().equals(ID)) return i;
+    	}
+    	return i;
+    }
+    
     class SocketMessageThread extends Thread {
         UiController cont;
         ResponseHandler res_hand = new ResponseHandler();
@@ -581,6 +918,7 @@ public class UiController implements Initializable {
             			OnMessage(this.cont, responseLine);
             		}
             		System.out.println("terminate !");
+            		create_notification("Attention", "Terminate the server connection !");
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -590,17 +928,61 @@ public class UiController implements Initializable {
             javafx.application.Platform.runLater(new Runnable() {
                 @Override
                 public void run() {
-                	if (res_hand.Res_count_of_conversation(line,toUser)!=-1) {
-                		ResponseHandler.Num_Message_Now_Conversation = res_hand.Res_count_of_conversation(line,toUser);
-                		Get_Some_Message(ResponseHandler.Num_Message_Now_Conversation,responsehandler.Count_Message_Now_In_Conversation(toUser));
-                	}
-                	else if(res_hand.Res_get_messages(line, toUser)!=-1) {
-                		System.out.println("Get Messages Successfully For "+Username+" From "+toUser);
-                		SetListChat(responsehandler.Load_Message_New(Username, toUser));
-                	}
-                	else if(res_hand.Res_Send_Message(line).equals(Constant.res_success)) {
 
-                	}
+                	JSONObject jo;
+					try {
+						jo = (JSONObject) new JSONParser().parse(line);
+						String type = (String) jo.get("type");
+						if(type.equals(Constant.res_get_message_count)) {
+							ResponseHandler.Num_Message_Now_Conversation = res_hand.Res_count_of_conversation(toUser,jo);
+							int now_num_message = responsehandler.Count_Message_Now_In_Conversation(toUser);
+							if(ResponseHandler.Num_Message_Now_Conversation>now_num_message) {
+								Get_Some_Message(ResponseHandler.Num_Message_Now_Conversation,now_num_message,false);
+							}
+							else {
+								create_notification("Full Message !", "You have already loaded enough messages for this chat !");
+							}
+							
+						}
+						else if(type.equals(Constant.res_get_messages)) {
+							int result = res_hand.Res_get_messages(toUser,jo);
+							if(result!=-1) {
+								System.out.println("Get Messages Successfully For "+Username+" From "+toUser);
+								
+							}
+							SetListChat(responsehandler.Load_Message_New(Username, toUser));
+							isGettingMessage = false;
+						}
+						else if(type.equals(Constant.res_create_group)) {
+							String[] result = res_hand.Res_Create_Group_Success(jo);
+							Set_ID_New_Group(result);
+						}
+						else if(type.equals(Constant.res_get_message_group_count)) {
+							int num_message_in_group = res_hand.Res_Message_Count_In_Group(jo);
+							int num_message_in_DB = res_hand.Get_Num_Message_In_Group(toUser);
+							if(num_message_in_DB<num_message_in_group) {
+								Get_Some_Message(num_message_in_group, num_message_in_DB, true);
+							}
+							else {
+								create_notification("Full Message !", "You have already loaded enough messages for this group !");
+							}
+						}
+						else if(type.equals(Constant.res_get_messages_group)) {
+							int result = res_hand.Res_Get_Message_Group(jo);
+							if(result!=-1) {
+								System.out.println("Get Messages Successfully For "+Username+" From "+toUser);
+							}
+							SetListChat(responsehandler.Load_Message_Group(toUser));
+						}
+
+						else if(type.equals(Constant.res_success)) {
+							
+						}
+					} catch (ParseException e) {
+						e.printStackTrace();
+					}
+        			
+                	
                 }
             });
         }
@@ -610,7 +992,7 @@ public class UiController implements Initializable {
    
     class SocketNotificationThread extends Thread {
     	UiController controller;
-        ResponseHandler res_hand = new ResponseHandler();
+        //ResponseHandler res_hand = new ResponseHandler();
         BufferedReader isthread = is.get(2);
     	public SocketNotificationThread(UiController controller) {
 			this.controller = controller;
@@ -628,6 +1010,7 @@ public class UiController implements Initializable {
             		OnNotification(this.controller, responseLine);
             	}
             	System.out.println("terminate !");
+            	create_notification("Attention", "Terminate the server connection !");
              	} catch (IOException e) {
                 e.printStackTrace();
             }
@@ -637,30 +1020,74 @@ public class UiController implements Initializable {
              javafx.application.Platform.runLater(new Runnable() {
                  @Override
                  public void run() {
-                    if(!res_hand.Res_New_Message(line).data.isEmpty()) {
-                       Message mess = res_hand.Res_New_Message(line);
-                 	   if(!mess.from.equals(toUser)) create_notification(Constant.create_title_new_message(mess.from),mess.data);
-      
-                 	   else  cont.RenderMessage(mess.ToFrom,mess.timestamp,mess.data);
-                 	    
-                 	   reqhan.create_new_conversation(false, get_list_User(mess.from));
-                 	   res_hand.Save_Message_New(Username,mess);
-                 	}
-                    else if(!res_hand.Res_New_Message_Notification(line).get(0).account.equals("")) {
-                    	new_message_num = res_hand.result_new_nofication;
-                    	new_message_num.remove(0);
-                    	SetNewMessageNotification();
 
-                    	
-                    }
-                    else if(!res_hand.Res_Error(line).content.isEmpty()) {
-                    	ErrorRespond  err = res_hand.Res_Error(line);
-                    	create_notification(Constant.create_title_error(err.error_code), err.content);
-                    	
-                    }
-                    else {
-                    	//System.out.println("Test 4");
-                    }
+                	JSONObject jo;
+					try {
+						jo = (JSONObject) new JSONParser().parse(line);
+						String type = (String) jo.get("type");
+						if(type.equals(Constant.res_message_notification)) {
+							Message mess = responsehandler.Res_New_Message(jo);
+							if(!mess.from.equals(toUser)) create_notification(Constant.create_title_new_message(mess.from),mess.data);
+							else cont.RenderMessage(mess.ToFrom,responsehandler.convert_UTC_to_Local(mess.timestamp),mess.data);
+		                 	reqhan.create_new_conversation(false, get_list_User(mess.from));
+		                 	responsehandler.Save_Message_New(Username,mess);
+		                 	Mark_Message_Seen(mess.from, false);
+						}
+						else if(type.equals(Constant.res_msg_account_data)) {
+							List<ColoredText> listGroup = responsehandler.Res_New_Message_Notification(jo);
+							Create_Groups(listGroup);
+							ReceiveDataAfterLogin = true;
+							new_message_num = responsehandler.result_new_nofication;
+							SetNewMessageNotification();
+							create_Notification_for_new_Group();
+							BindingTwoScrollBar();
+						}
+						else if(type.equals(Constant.res_notification_new_group)) {
+							ColoredText colortxt = responsehandler.Res_Notification_New_Group(jo);
+							Create_Group(colortxt);
+							create_notification("Group Chat !", "You have just been invited to the group: "+colortxt.getText());
+						}
+						else if(type.equals(Constant.res_group_notification)) {
+							Message mess = responsehandler.Res_Group_Message_Notification(jo);
+							if(mess.to.split(":")[0].equals(toUser)) {
+								RenderMessage(1, responsehandler.convert_UTC_to_Local(mess.timestamp), mess.data);
+							}
+							else {
+								create_notification("Group Chat !", "You Just Got A New Message In The Group: "+mess.to.split(":")[1]);
+							}
+							Mark_Message_Seen(mess.to.split(":")[0], true);
+						}
+						else if(type.equals(Constant.res_mark_messages_seen)) {
+							String ID = responsehandler.Res_Mark_Seen_Message(jo,false);
+							Set_Seen_Conversation(ID);
+						}
+						else if(type.equals(Constant.res_mark_group_messages_seen)) {
+							String ID = responsehandler.Res_Mark_Seen_Message(jo,true);
+							Set_Seen_Conversation(ID);
+						}
+						else if(type.equals(Constant.res_notification_added_to_group)) {
+							ColoredText group = responsehandler.Res_Notification_Added_To_Group(jo);
+							Create_Group(group);
+						}
+						else if(type.equals(Constant.res_notification_new_paticipant)) {
+							ColoredText group = responsehandler.Res_Notification_New_Participant(jo);
+							Add_New_User_To_Group_GUI_ID(group);
+						}
+						else if(type.equals(Constant.res_notification_leave_group)) {
+							AccountInformation accountInformation = responsehandler.Res_Leave_Group(jo);
+							removeGroup(accountInformation.full_name, false, accountInformation.account_name);
+						}
+						else if(type.equals(Constant.res_call_notification)) {
+							Call call = responsehandler.Res_New_Call(jo);
+							create_notification(Constant.create_title_new_call("New Call"),"");
+						}
+					
+						
+					
+					} catch (ParseException e) {
+						e.printStackTrace();
+					}
+                   
                  }
              });
          }
@@ -669,7 +1096,6 @@ public class UiController implements Initializable {
     
     class SocketUserPresence extends Thread {
     	UiController controller ;
-        ResponseHandler res_hand = new ResponseHandler();
         BufferedReader isthread = is.get(1);
     	public SocketUserPresence(UiController controller) {
 			this.controller = controller;
@@ -685,6 +1111,7 @@ public class UiController implements Initializable {
 	    			OnUserPresence(this.controller, responseLine);
 	    		}
 				System.out.println("terminate !");
+				create_notification("Attention", "Terminate the server connection !");
 				} catch (IOException e) {
 					e.printStackTrace();
 			}
@@ -695,10 +1122,28 @@ public class UiController implements Initializable {
 				
 				@Override
 				public void run() {
-					if(!res_hand.Res_Presence(line).type.equals("")) {
-						ResponsePresence responsePresence = res_hand.Res_Presence(line);
-						ReceiceListOnlineUser(responsePresence.list_online, responsePresence.list_offline);
+
+					JSONObject jo;
+					try {
+						jo = (JSONObject) new JSONParser().parse(line);
+						String type = (String) jo.get("type");
+						if (type.equals(Constant.res_presence)) {
+							ResponsePresence responsePresence = responsehandler.Res_Presence(jo);
+							ReceiveListOnlineUser(responsePresence.list_online, responsePresence.list_offline);
+							if(ReceiveDataAfterLogin) {
+								Create_Groups(responsehandler.Load_Group_Infor_From_DB());
+							}
+							if(Get_index_user_by_ID(toUser)!=-1) {
+								listOnlineUser.getSelectionModel().select(Get_index_user_by_ID(toUser));
+							}
+							 
+						}
 					}
+					catch(ParseException e) {
+						e.printStackTrace();
+					}
+					
+					
 				}
 			});
     		
@@ -720,10 +1165,95 @@ public class UiController implements Initializable {
     	return list;
     }
     
-    public void Get_Messsage_Res() {
-    	GetMessagesCount();
+    public void BindingTwoScrollBar() {
+    	 ScrollBar scrollBarListOnline = (ScrollBar) listOnlineUser.lookup(".scroll-bar:vertical");
+         ScrollBar scrollBarListNumNewMessage = (ScrollBar) listNumNewMessage.lookup(".scroll-bar:vertical");
+         scrollBarListOnline.valueProperty().bindBidirectional(scrollBarListNumNewMessage.valueProperty());
     }
-   
+    
+    public void clickToChoice(MouseEvent event) {
+    	listOnlineUser.getSelectionModel().select(0);
+    }
+    
+    public void customizeListOnlineUser() {
+        listOnlineUser.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<ColoredText>() {
+
+            @Override
+            public void changed(ObservableValue<? extends ColoredText> observable, ColoredText oldValue, ColoredText newValue) {
+            	
+            	try {
+                	System.out.println("New value: "+newValue.toString());
+                	if(!newValue.getID().equals(toUser)) {
+                		if(!vboxChat.getChildren().isEmpty()) vboxChat.getChildren().clear();
+                		toUser = newValue.getID();
+                		lblToUser.setText(newValue.getText());
+                		if(!newValue.getisGroup()) {
+                			lblToUserStatus.setText(Constant.create_status(newValue.getOnlineStatus()));
+                			reqhan.create_new_conversation(false, get_list_User(toUser));
+                    		ResponseHandler.Num_Got_Message = 0;
+                    		List<Message> list_messages = get_List_Message_From_ID(toUser,false);
+                    		if(list_messages.size()>0) {
+                    			list_messages.forEach(action -> {
+                        			responsehandler.Save_Message_New(Username, action);
+                        			System.out.println("list_dual");
+                        		});
+                    			scrollChat.vvalueProperty().bind(vboxChat.heightProperty());
+                        		SetListChat(responsehandler.Load_Message_New(Username, toUser));
+                    		}
+                    		else {
+                        		if(responsehandler.Count_Message_Now_In_Conversation(toUser) == 0 && !isGettingMessage) {
+                        			GetMessagesCount(false);
+                        			isGettingMessage = true;
+                        		}
+                        		else {
+                        			scrollChat.vvalueProperty().bind(vboxChat.heightProperty());
+                            		SetListChat(responsehandler.Load_Message_New(Username, toUser));
+                        		}
+                    		}
+                    		
+                		}
+                		else {
+                			ResponseHandler.Num_Got_Message_Group = 0;
+                			lblToUserStatus.setText("Group Chat");
+                			
+                			List<Message> list_messages = get_List_Message_From_ID(toUser,true);
+                			
+                			System.out.println("ID: "+newValue.getparticipants().toString());
+                			
+                			
+                			if(list_messages.size()>0) {
+                				list_messages.forEach(action ->{
+                    				responsehandler.Save_Message_Group(toUser, action);
+                    				System.out.println("list_group");
+                    			});
+                        		scrollChat.vvalueProperty().bind(vboxChat.heightProperty());
+                        		SetListChat(responsehandler.Load_Message_Group(toUser));
+                			}
+                			else {
+                    			if(responsehandler.Get_Num_Message_In_Group(toUser) == 0 && !isGettingMessage) {
+                    				GetMessagesCount(true);
+                    			}
+                    			else {
+                            		scrollChat.vvalueProperty().bind(vboxChat.heightProperty());
+                            		SetListChat(responsehandler.Load_Message_Group(toUser));
+                    			}
+                			}
+                		
+                		}
+                		System.out.println("ID: "+newValue.getID());
+                		if(Get_Num_Message_By_ID(toUser)>0) {
+                			Mark_Message_Seen(toUser,newValue.getisGroup());
+                		}
+                	}
+            	}
+            	catch (NullPointerException e) {
+            		System.out.println("Null New User");
+            	}
+            	
+            }
+        });
+    }
+    
     @Override
     public void initialize(URL url, ResourceBundle rb) {
         Get_Connection();
@@ -734,7 +1264,6 @@ public class UiController implements Initializable {
         socketNotificationThread.start();
         socketUserPresence.start();
         scrollChat.setVmax(2);
-        
         
         listOnlineUser.setCellFactory(lv -> new ListCell<ColoredText>() {
         	@Override
@@ -764,33 +1293,9 @@ public class UiController implements Initializable {
                 }
         	}
         });
-        
-        listOnlineUser.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<ColoredText>() {
+       
+        customizeListOnlineUser();
 
-            @Override
-            public void changed(ObservableValue<? extends ColoredText> observable, ColoredText oldValue, ColoredText newValue) {
-            	
-            	int index = listOnlineUser.getSelectionModel().getSelectedIndex();
-            	if(index!=-1) {
-            		if(!vboxChat.getChildren().isEmpty()) vboxChat.getChildren().clear();
-            		
-            		toUser = newValue.getID();
-            		lblToUser.setText(newValue.getText());
-            		if(newValue.getColor() == Color.GREEN) lblToUserStatus.setText(Constant.create_status(""));
-                	else lblToUserStatus.setText(Constant.create_status("12h"));
-            		reqhan.create_new_conversation(false, get_list_User(toUser));
-            		responsehandler.Num_Got_Message = 0;
-            		if(responsehandler.Count_Message_Now_In_Conversation(toUser) == 0) {
-                    	Get_Messsage_Res();
-                	}
-                	else {
-                		scrollChat.vvalueProperty().bind(vboxChat.heightProperty());
-                		SetListChat(responsehandler.Load_Message_New(Username, toUser));
-                	}
-            	}
-            	
-            }
-        });
         
         scrollChat.setOnScroll(new EventHandler<ScrollEvent>() {
             @Override public void handle(ScrollEvent event) {
@@ -799,21 +1304,34 @@ public class UiController implements Initializable {
                 }
                 event.consume();
                 if(scrollChat.getVvalue() == 0){
-    	            
-    	            int term = responsehandler.Count_Message_Now_In_Conversation(toUser);
-    	            if(vboxChat.getChildren().size()<term) {
-    	            	SetListChat(responsehandler.Load_Message_New(Username, toUser));
-    	            	System.out.println("now get the chat in DB");
-    	            }
-    	            else {
-    	            	Get_Messsage_Res();
-    	            	System.out.println("now get the chat from Server");
-    	            }
-    	         }
-                
-            }
+                	 if(!listOnlineUser.getSelectionModel().getSelectedItem().getisGroup()) {
+                     	int term = responsehandler.Count_Message_Now_In_Conversation(toUser);
+             	        if(vboxChat.getChildren().size()<term) {
+	             	        SetListChat(responsehandler.Load_Message_New(Username, toUser));
+	             	        System.out.println("now get the dual chat in DB");
+             	        }
+             	        else {
+	             	        GetMessagesCount(false);
+	             	        System.out.println("now get the dual chat from Server");
+             	        }
+             	         
+                     }
+                     else {
+                     	
+                     	int term = responsehandler.Get_Num_Message_In_Group(toUser);
+                     	  if(vboxChat.getChildren().size()<term) {
+           	            	SetListChat(responsehandler.Load_Message_Group(toUser));
+           	            	System.out.println("now get the group chat in DB");
+           	             }
+           	             else {
+           	            	GetMessagesCount(true);
+           	            	System.out.println("now get the group chat from Server");
+           	             }
+                     }
+                	 scrollChat.setVvalue(1.5);
+                }
+              }
         });
-        
         
         
         
@@ -834,17 +1352,7 @@ public class UiController implements Initializable {
 //	          }
 //          }
 //        });
-        
-        
 
-        
-        
-
-    	   
-        
-//        listOnlineUser.getItems().add(new ColoredText("huytc", Color.RED));
-//        listOnlineUser.getItems().add(new ColoredText("anhnq", Color.BLUE));
-//        listOnlineUser.getItems().add(new ColoredText("user3", Color.YELLOW));
         makeStageDrageable();
         
 

@@ -89,7 +89,7 @@
                         <Font size="14.0" />
                      </font>
                   </JFXButton>
-                  <ScrollPane prefHeight="315.0" prefWidth="300.0">
+                  <ScrollPane fx:id="scrollOnline" prefHeight="315.0" prefWidth="300.0">
                      <content>
                         <HBox prefHeight="292.0" prefWidth="298.0">
                            <children>
@@ -118,7 +118,7 @@
                 <HBox alignment="CENTER_LEFT" layoutX="10.0" layoutY="323.0" maxHeight="-Infinity" minHeight="-Infinity" prefHeight="80.0" styleClass="profile" VBox.vgrow="NEVER">
                     <children>
                   <TextField fx:id="txtUser" prefHeight="25.0" prefWidth="232.0" promptText="Set your name" styleClass="txt-textSetUser" />
-                  <Button fx:id="btnSetUser" mnemonicParsing="false" onMouseClicked="#SetUser" style="-fx-background-color: #870909;" text="OK" textFill="WHITE" />
+                  <Button fx:id="btnSetUser" mnemonicParsing="false" onMouseClicked="#SetUser" prefHeight="25.0" prefWidth="47.0" style="-fx-background-color: #870909;" text="User" textFill="WHITE" />
                     </children>
                     <padding>
                         <Insets left="10.0" />
@@ -186,7 +186,7 @@
                                     <Image url="@../icons/star.png" />
                                  </image>
                               </ImageView>
-                              <ImageView fitHeight="50.0" fitWidth="50.0" layoutX="564.0" layoutY="24.0" pickOnBounds="true" smooth="false">
+                              <ImageView fx:id="btnSendCall" fitHeight="50.0" fitWidth="50.0" layoutX="564.0" layoutY="24.0" onMouseClicked="#Call_btn_click" pickOnBounds="true" smooth="false">
                                  <image>
                                     <Image url="@../icons/phone.png" />
                                  </image>
@@ -196,12 +196,12 @@
                                     <Image url="@../icons/video-call.png" />
                                  </image>
                               </ImageView>
-                              <ImageView fitHeight="56.0" fitWidth="47.0" layoutX="663.0" layoutY="19.0" pickOnBounds="true" smooth="false">
+                              <ImageView fx:id="btnInfor" fitHeight="56.0" fitWidth="47.0" layoutX="663.0" layoutY="19.0" onMouseClicked="#ClickToViewInFor" pickOnBounds="true" smooth="false">
                                  <image>
                                     <Image url="@../icons/dots.png" />
                                  </image>
                               </ImageView>
-                              <Label fx:id="lblToUserStatus" layoutX="488.0" layoutY="73.0" prefHeight="27.0" prefWidth="232.0" text="Status:">
+                              <Label fx:id="lblToUserStatus" layoutX="410.0" layoutY="73.0" prefHeight="27.0" prefWidth="310.0">
                                  <font>
                                     <Font size="18.0" />
                                  </font>
@@ -251,7 +251,7 @@
                                 <Cursor fx:constant="HAND" />
                             </cursor>
                         </ImageView>
-                        <ImageView fitHeight="35.0" fitWidth="40.0" layoutX="670.0" layoutY="33.0" pickOnBounds="true" smooth="false">
+                        <ImageView fitHeight="35.0" fitWidth="40.0" layoutX="670.0" layoutY="33.0" onMouseClicked="#clickToChoice" pickOnBounds="true" smooth="false">
                             <image>
                                 <Image url="@../icons/smiley.png" />
                             </image>
@@ -269,7 +269,7 @@
                         <Font size="14.0" />
                      </font>
                   </JFXTextField>
-                  <JFXButton fx:id="btnSendMess" layoutX="452.0" layoutY="33.0" prefHeight="40.0" prefWidth="50.0" text="." />
+                  <JFXButton fx:id="btnSendMess" layoutX="452.0" layoutY="33.0" onMouseClicked="#ClickToSendMessage" prefHeight="40.0" prefWidth="50.0" text="." />
                     </children>
                 </Pane>
             </children>

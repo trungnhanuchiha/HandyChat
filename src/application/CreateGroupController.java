@@ -33,7 +33,7 @@ public class CreateGroupController implements Initializable {
 
 	private List<CheckBox> list_checkbox = new ArrayList<CheckBox>();
 	private List<String> list_account_after_check = new ArrayList<String>();
-
+	private List<String> list_name_after_check = new ArrayList<String>();
 
 	@Override
 	public void initialize(URL arg0, ResourceBundle arg1) {
@@ -82,9 +82,14 @@ public class CreateGroupController implements Initializable {
 		for(int i = 0 ;i<list_checkbox.size();++i) {
 			if(list_checkbox.get(i).isSelected()) {
 				list_account_after_check.add(this.list_User.get(i).getID());
+				list_name_after_check.add(this.list_User.get(i).getText());
 			}
 		}
-		if(list_account_after_check.size()>0) {
+		
+		list_account_after_check.add(ResponseHandler.NowUser);
+		list_name_after_check.add(ResponseHandler.NowUserName);
+
+		if(list_account_after_check.size()>1) {
 			close_windows();
 		}
 		else {
@@ -112,6 +117,9 @@ public class CreateGroupController implements Initializable {
 	// getter
 	public List<String> getlist_user_after_check() {
 		return this.list_account_after_check;
+	}
+	public List<String> getlist_name_after_check(){
+		return this.list_name_after_check;
 	}
 
 }
