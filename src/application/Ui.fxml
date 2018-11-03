@@ -270,6 +270,7 @@
                      </font>
                   </JFXTextField>
                   <JFXButton fx:id="btnSendMess" layoutX="452.0" layoutY="33.0" onMouseClicked="#ClickToSendMessage" prefHeight="40.0" prefWidth="50.0" text="." />
+                  <Label id="status" fx:id="lblStatusUpload" layoutX="418.0" layoutY="14.0" />
                     </children>
                 </Pane>
             </children>
