@@ -12,7 +12,7 @@ import java.util.ResourceBundle;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.awt.Desktop;
-
+import java.lang.Math;
 import org.json.simple.*;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -115,6 +115,8 @@ public class UiController implements Initializable {
     @FXML
     private JFXButton btnCreateGroup, btn1, btnSendMess;
     
+    @FXML
+    public Label lblStatusUpload;
     
 
     @FXML
@@ -356,37 +358,115 @@ public class UiController implements Initializable {
     
     
     // File control
+    public void updateST(long num1, long num2, String fname) {
+
+	    if ((num2-num1) <= 5) {
+	    	lblStatusUpload.setText("Sending successful "+fname);	
+        System.out.println("Sending successful "+fname);
+	    }
+	    else {
+	    	lblStatusUpload.setText("Sent " + num1/1024 + "/" + num2/1024 + " KB" );	
+	    System.out.println("Sent " + num1/1024 + "/" + num2/1024 + " KB" );
+	    }
+	    
+    }
     private void Choose_File() throws IOException {
-    	File fileToSend  = fileChooser.showOpenDialog(btn1.getScene().getWindow());
-    	if(fileToSend !=null) {
-    		Socket socket = null;
-            String host = "127.0.0.1";
-
-            socket = new Socket(host, 4444);
-
-            //File fileToSend = new File("d:\\snakeGame.html");
-            // Get the size of the file
-            long length = fileToSend.length();
-            
-            byte[] bytes = new byte[16 * 1024];
-            InputStream in = new FileInputStream(fileToSend);
-            OutputStream out = socket.getOutputStream();
-
-            //send the file name first
-            DataOutputStream fnOut = new DataOutputStream(out);
-            fnOut.writeUTF(fileToSend.getName());
-            fnOut.writeLong(length); 
-            
-            		
-            int count;
-            while ((count = in.read(bytes)) > 0) {
-                out.write(bytes, 0, count);
-            }
-
-            out.close();
-            in.close();
-            socket.close();
+    	File myfile  = fileChooser.showOpenDialog(btn1.getScene().getWindow());
+    	if(myfile !=null) {
+    		threadUploadFile nthreadUploadFile = new threadUploadFile(myfile);
+    		nthreadUploadFile.start();
+    		
     	}
+    }
+    
+    class threadUploadFile extends Thread {
+    	private File fileToSend;
+    	
+    	threadUploadFile(File fileToSend){
+    		this.fileToSend = fileToSend;
+    		
+    	}
+    	
+    	@Override
+    	public void run() {
+    	Socket socket = null;
+        String host = serverHost;
+
+        try {
+			socket = new Socket(host, 4444);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+        //File fileToSend = new File("d:\\snakeGame.html");
+        // Get the size of the file
+        long length = fileToSend.length();
+        long byteSent = 0;
+        
+        byte[] bytes = new byte[16 * 1024];
+        InputStream in = null;
+		try {
+			in = new FileInputStream(fileToSend);
+		} catch (FileNotFoundException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+        OutputStream out = null;
+		try {
+			out = socket.getOutputStream();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+        //send the file name first
+        DataOutputStream fnOut = new DataOutputStream(out);
+        try {
+			fnOut.writeUTF(fileToSend.getName());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+        try {
+			fnOut.writeLong(length);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} 
+        
+        int count;
+        try {
+			while ((count = in.read(bytes)) > 0) {
+			    out.write(bytes, 0, count);
+			    byteSent += count;
+			    updateST(byteSent, length, fileToSend.getName());
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+        updateST(byteSent, length, fileToSend.getName());
+        try {
+			out.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+        try {
+			in.close();
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+        try {
+			socket.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    	}
+    	
     }
     
     private void openFile(File file) {
@@ -559,6 +639,7 @@ public class UiController implements Initializable {
     }
     
     public void EnterToSendMessageHandler() {
+    	lblStatusUpload.setText("");
     	if(txtContMess.getText().length()!=0 && !toUser.equals(Username)) {
     		scrollChat.vvalueProperty().bind(vboxChat.heightProperty());
         	if(listOnlineUser.getSelectionModel().getSelectedItem().getisGroup()) {
@@ -1282,6 +1363,7 @@ public class UiController implements Initializable {
     
     @Override
     public void initialize(URL url, ResourceBundle rb) {
+    	lblStatusUpload.setText("");
         Get_Connection();
         SocketMessageThread socketMessageThread = new SocketMessageThread(this);
         SocketNotificationThread socketNotificationThread = new SocketNotificationThread(this);
