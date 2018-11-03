@@ -12,9 +12,9 @@
 <AnchorPane fx:id="parent" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="568.0" prefWidth="742.0" style="-fx-background-color: #950000;" xmlns="http://javafx.com/javafx/10.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.SignupController">
    <children>
       <Pane layoutX="36.0" layoutY="205.0" prefHeight="83.0" prefWidth="259.0" />
-      <TextField id="inputUsername" fx:id="inputUsername" layoutX="398.0" layoutY="72.0" prefHeight="41.0" prefWidth="248.0" promptText="Username" style="-fx-background-color: #FFFFFF; -fx-border-color: #ffffff;" stylesheets="@../../Lgoin.css" />
-      <PasswordField id="inputPassword" fx:id="inputPassword" layoutX="398.0" layoutY="140.0" prefHeight="41.0" prefWidth="248.0" promptText="Password" style="-fx-border-color: #ffffff; -fx-background-color: #ffffff;" stylesheets="@../../Lgoin.css" />
-      <JFXButton id="btnLogin" fx:id="btnSignUp" layoutX="398.0" layoutY="445.0" onAction="#SignUp" prefHeight="41.0" prefWidth="248.0" style="-fx-background-color: #6ED9A0;" stylesheets="@../../Lgoin.css" text="SIGN UP!" textFill="#fbfcfc">
+      <TextField id="inputUsername" fx:id="inputUsername" layoutX="398.0" layoutY="72.0" prefHeight="41.0" prefWidth="248.0" promptText="Username" style="-fx-background-color: #FFFFFF; -fx-border-color: #ffffff;" />
+      <PasswordField id="inputPassword" fx:id="inputPassword" layoutX="398.0" layoutY="140.0" prefHeight="41.0" prefWidth="248.0" promptText="Password" style="-fx-border-color: #ffffff; -fx-background-color: #ffffff;" />
+      <JFXButton id="btnLogin" fx:id="btnSignUp" layoutX="398.0" layoutY="445.0" onAction="#SignUp" prefHeight="41.0" prefWidth="248.0" style="-fx-background-color: #6ED9A0;" text="SIGN UP!" textFill="#fbfcfc">
          <font>
             <Font name="System Bold" size="15.0" />
          </font>
@@ -29,9 +29,9 @@
             <Image url="@../icons/logo.png" />
          </image>
       </ImageView>
-      <PasswordField id="inputRePassword" fx:id="inputRePassword" layoutX="398.0" layoutY="205.0" prefHeight="41.0" prefWidth="248.0" promptText="Re-Password" style="-fx-border-color: #ffffff; -fx-background-color: #ffffff;" stylesheets="@../../Lgoin.css" />
-      <TextField id="inputEmail" fx:id="inputEmail" layoutX="398.0" layoutY="270.0" prefHeight="41.0" prefWidth="248.0" promptText="email" style="-fx-background-color: #FFFFFF; -fx-border-color: #ffffff;" stylesheets="@../../Lgoin.css" />
-      <TextField id="inputFullName" fx:id="inputFullName" layoutX="398.0" layoutY="334.0" prefHeight="41.0" prefWidth="248.0" promptText="Full name" style="-fx-background-color: #FFFFFF; -fx-border-color: #ffffff;" stylesheets="@../../Lgoin.css" />
+      <PasswordField id="inputRePassword" fx:id="inputRePassword" layoutX="398.0" layoutY="205.0" prefHeight="41.0" prefWidth="248.0" promptText="Re-Password" style="-fx-border-color: #ffffff; -fx-background-color: #ffffff;" />
+      <TextField id="inputEmail" fx:id="inputEmail" layoutX="398.0" layoutY="270.0" prefHeight="41.0" prefWidth="248.0" promptText="email" style="-fx-background-color: #FFFFFF; -fx-border-color: #ffffff;" />
+      <TextField id="inputFullName" fx:id="inputFullName" layoutX="398.0" layoutY="334.0" prefHeight="41.0" prefWidth="248.0" promptText="Full name" style="-fx-background-color: #FFFFFF; -fx-border-color: #ffffff;" />
       <JFXButton id="cancel" layoutX="716.0" layoutY="2.0" onMouseClicked="#close" text="X" textFill="WHITE">
          <font>
             <Font name="System Bold" size="12.0" />
