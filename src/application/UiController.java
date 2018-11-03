@@ -360,7 +360,7 @@ public class UiController implements Initializable {
     	File fileToSend  = fileChooser.showOpenDialog(btn1.getScene().getWindow());
     	if(fileToSend !=null) {
     		Socket socket = null;
-            String host = "127.0.0.1";
+            String host = serverHost;
 
             socket = new Socket(host, 4444);
 
