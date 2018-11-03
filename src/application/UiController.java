@@ -147,7 +147,7 @@ public class UiController implements Initializable {
     }
     
     @FXML
-    private void ClickToChooseFile(MouseEvent e) {
+    private void ClickToChooseFile(MouseEvent e) throws IOException {
     	Choose_File();
     }
 
@@ -356,10 +356,36 @@ public class UiController implements Initializable {
     
     
     // File control
-    private void Choose_File() {
-    	File file  = fileChooser.showOpenDialog(btn1.getScene().getWindow());
-    	if(file !=null) {
-    		this.openFile(file);
+    private void Choose_File() throws IOException {
+    	File fileToSend  = fileChooser.showOpenDialog(btn1.getScene().getWindow());
+    	if(fileToSend !=null) {
+    		Socket socket = null;
+            String host = "127.0.0.1";
+
+            socket = new Socket(host, 4444);
+
+            //File fileToSend = new File("d:\\snakeGame.html");
+            // Get the size of the file
+            long length = fileToSend.length();
+            
+            byte[] bytes = new byte[16 * 1024];
+            InputStream in = new FileInputStream(fileToSend);
+            OutputStream out = socket.getOutputStream();
+
+            //send the file name first
+            DataOutputStream fnOut = new DataOutputStream(out);
+            fnOut.writeUTF(fileToSend.getName());
+            fnOut.writeLong(length); 
+            
+            		
+            int count;
+            while ((count = in.read(bytes)) > 0) {
+                out.write(bytes, 0, count);
+            }
+
+            out.close();
+            in.close();
+            socket.close();
     	}
     }
     
