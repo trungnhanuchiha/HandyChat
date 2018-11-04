@@ -16,8 +16,11 @@ import java.lang.Math;
 import org.json.simple.*;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
-
-
+import org.apache.commons.net.PrintCommandListener;
+import org.apache.commons.net.ftp.FTP;
+import org.apache.commons.net.ftp.FTPClient;
+import org.apache.commons.net.ftp.FTPFile;
+import org.apache.commons.net.ftp.FTPReply;
 
 import com.jfoenix.controls.JFXButton;
 import com.jfoenix.controls.JFXListView;
@@ -358,117 +361,112 @@ public class UiController implements Initializable {
     
     
     // File control
-    public void updateST(long num1, long num2, String fname) {
-
-	    if ((num2-num1) <= 5) {
-	    	lblStatusUpload.setText("Sending successful "+fname);	
-        System.out.println("Sending successful "+fname);
-	    }
-	    else {
-	    	lblStatusUpload.setText("Sent " + num1/1024 + "/" + num2/1024 + " KB" );	
-	    System.out.println("Sent " + num1/1024 + "/" + num2/1024 + " KB" );
-	    }
-	    
-    }
+    
     private void Choose_File() throws IOException {
     	File myfile  = fileChooser.showOpenDialog(btn1.getScene().getWindow());
+    	//File myfile = new File("d:\\snakeGame.html");
     	if(myfile !=null) {
-    		threadUploadFile nthreadUploadFile = new threadUploadFile(myfile);
-    		nthreadUploadFile.start();
+    		try {
+            	JSONObject jo = reqhan.Req_send_file(toUser, myfile.getName(), myfile.getPath());
+            	String datetime = responsehandler.convert_UTC_to_Local((String) jo.get("timestamp"));
+            	
+            	os.get(0).write(jo.toString());
+                os.get(0).newLine();
+                os.get(0).flush();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } 
     		
+    		/*
+    		Alert alert = new Alert(AlertType.INFORMATION);
+    		alert.setTitle("Information Dialog");
+    		alert.setHeaderText(null);
+    		alert.setContentText("I have a great message for you!");
+
+    		alert.showAndWait();*/
     	}
     }
     
     class threadUploadFile extends Thread {
     	private File fileToSend;
-    	
-    	threadUploadFile(File fileToSend){
+    	String idConversation;
+    	String idfile;
+    	 
+    	threadUploadFile(File fileToSend, String idConversation, String idfile){
     		this.fileToSend = fileToSend;
+    		this.idConversation = idConversation;
+    		this.idfile = idfile;
     		
     	}
     	
     	@Override
     	public void run() {
-    	Socket socket = null;
-        String host = serverHost;
-
-        try {
-			socket = new Socket(host, 4444);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-        //File fileToSend = new File("d:\\snakeGame.html");
-        // Get the size of the file
-        long length = fileToSend.length();
-        long byteSent = 0;
-        
-        byte[] bytes = new byte[16 * 1024];
-        InputStream in = null;
-		try {
-			in = new FileInputStream(fileToSend);
-		} catch (FileNotFoundException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-        OutputStream out = null;
-		try {
-			out = socket.getOutputStream();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-        //send the file name first
-        DataOutputStream fnOut = new DataOutputStream(out);
-        try {
-			fnOut.writeUTF(fileToSend.getName());
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-        try {
-			fnOut.writeLong(length);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} 
-        
-        int count;
-        try {
-			while ((count = in.read(bytes)) > 0) {
-			    out.write(bytes, 0, count);
-			    byteSent += count;
-			    updateST(byteSent, length, fileToSend.getName());
+    		System.out.println("Start");
+            FTPUploader ftpUploader = null;
+			try {
+				ftpUploader = new FTPUploader(serverHost, "anonymous", "","");
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-        updateST(byteSent, length, fileToSend.getName());
-        try {
-			out.close();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-        try {
-			in.close();
-		} catch (IOException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-        try {
-			socket.close();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+            //FTP server path is relative. So if FTP account HOME directory is "/home/pankaj/public_html/" and you need to upload
+            // files to "/home/pankaj/public_html/wp-content/uploads/image2/", you should pass directory parameter as "/wp-content/uploads/image2/"
+            try {
+				ftpUploader.uploadFile(fileToSend.getPath(), idfile, "/"+idConversation+"/");
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+            ftpUploader.disconnect();
+            System.out.println("Done");
     	}
+    
+    }
     	
+
+public class FTPUploader {
+	
+    FTPClient ftp = null;
+    String pathnameDir;
+    public FTPUploader(String host, String user, String pwd, String pathnameDir) throws Exception{
+        this.pathnameDir = pathnameDir;
+    	ftp = new FTPClient();
+        ftp.addProtocolCommandListener(new PrintCommandListener(new PrintWriter(System.out)));
+        int reply;
+        ftp.connect(host, 4444);
+        reply = ftp.getReplyCode();
+        if (!FTPReply.isPositiveCompletion(reply)) {
+            ftp.disconnect();
+            throw new Exception("Exception in connecting to FTP Server");
+        }
+        ftp.login(user, pwd);
+        ftp.setFileType(FTP.BINARY_FILE_TYPE);
+        ftp.enterLocalPassiveMode();
+    }
+    public void createNewDir() throws IOException {
+    	ftp.mkd(pathnameDir);
+    
     }
     
+    public void uploadFile(String localFileFullName, String fileName, String hostDir)
+            throws Exception {
+        try(InputStream input = new FileInputStream(new File(localFileFullName))){
+            this.ftp.storeFile(hostDir + fileName, input);
+        }
+    }
+
+    public void disconnect(){
+        if (this.ftp.isConnected()) {
+            try {
+                this.ftp.logout();
+                this.ftp.disconnect();
+            } catch (IOException f) {
+                // do nothing as file is already saved to server
+            }
+        }
+    }
+}
+    	
     private void openFile(File file) {
         try {
             desktop.open(file);
@@ -1083,6 +1081,30 @@ public class UiController implements Initializable {
 						}
 
 						else if(type.equals(Constant.res_success)) {
+							
+						}
+						
+						else if(type.equals(Constant.res_send_file)) {
+							FTPUploader ftpnew = null;
+							try {
+								ftpnew = new FTPUploader(serverHost,"anonymous","",(String) jo.get("conversation"));
+							} catch (Exception e) {
+								System.out.println("ERROR on CONNECT TO MAKE NEW DIR");
+								e.printStackTrace();
+							}
+							try {
+								ftpnew.createNewDir();
+							} catch (IOException e) {
+								System.out.println("ERROR on MKDIR");
+								e.printStackTrace();
+							}
+							
+							System.out.println(jo.toString());
+							System.out.println(jo.get("path"));
+							
+							File myfile = new File ((String) jo.get("path"));
+							threadUploadFile nthreadUploadFile = new threadUploadFile(myfile, (String)jo.get("conversation"), (String)jo.get("id"));
+				    		nthreadUploadFile.start();
 							
 						}
 					} catch (ParseException e) {
